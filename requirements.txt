@@ -1,0 +1,8 @@
+fastapi==0.141.1
+uvicorn==0.52.4
+python-multipart==0.0.32
+python-dotenv==1.2.4
+requests==2.34.2
+elevenlabs==2.72.0
+groq==0.37.1
+pydantic==2.13.4
