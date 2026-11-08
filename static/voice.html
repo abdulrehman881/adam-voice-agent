@@ -34,6 +34,12 @@
       color: white;
       transition: background 0.2s ease;
     }
+    .toggle-row {
+      text-align: center;
+    }
+    .toggle-row p {
+      color: #b8c4d8;
+    }
     #voiceToggle:hover { background: #2f3b52; }
     #voiceToggle svg { width: 34px; height: 34px; }
     #voiceToggle .icon-speaker { display: none; }
@@ -71,19 +77,21 @@
   <h1>Adam — Truck Dispatch Agent</h1>
   <p>Speak naturally. Adam will respond automatically.</p>
 
-  <button id="voiceToggle" type="button" aria-label="Start listening">
-    <svg class="icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <rect x="9" y="3" width="6" height="11" rx="3"></rect>
-      <path d="M5 11a7 7 0 0 0 14 0"></path>
-      <path d="M12 18v3"></path>
-    </svg>
-    <svg class="icon-speaker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M3 10v4h4l5 4V6L7 10H3Z" fill="currentColor" stroke="none"></path>
-      <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
-      <path d="M18.5 6a9 9 0 0 1 0 12"></path>
-    </svg>
-  </button>
-  <p>Tap the mic to start. Tap again to stop. The icon changes to a speaker while Adam talks.</p>
+  <div class="toggle-row">
+    <button id="voiceToggle" type="button" aria-label="Start listening">
+      <svg class="icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="9" y="3" width="6" height="11" rx="3"></rect>
+        <path d="M5 11a7 7 0 0 0 14 0"></path>
+        <path d="M12 18v3"></path>
+      </svg>
+      <svg class="icon-speaker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 10v4h4l5 4V6L7 10H3Z" fill="currentColor" stroke="none"></path>
+        <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+        <path d="M18.5 6a9 9 0 0 1 0 12"></path>
+      </svg>
+    </button>
+    <p>Tap the mic to start. Tap again to stop. The icon changes to a speaker while Adam talks.</p>
+  </div>
 
   <div id="status">Ready</div>
   <div id="conversation">Your conversation will appear here.</div>
