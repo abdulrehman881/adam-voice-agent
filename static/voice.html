@@ -17,15 +17,42 @@
     h1 { margin-bottom: 8px; }
     p { color: #b8c4d8; }
     button {
-      padding: 12px 18px;
-      margin: 8px 6px 8px 0;
       border: 0;
-      border-radius: 8px;
       cursor: pointer;
       font-size: 15px;
     }
-    #start { background: #22c55e; color: #06210e; }
-    #stop { background: #ef4444; color: white; }
+    #voiceToggle {
+      width: 76px;
+      height: 76px;
+      margin: 10px 0;
+      padding: 0;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #1e293b;
+      color: white;
+      transition: background 0.2s ease;
+    }
+    #voiceToggle:hover { background: #2f3b52; }
+    #voiceToggle svg { width: 34px; height: 34px; }
+    #voiceToggle .icon-speaker { display: none; }
+    #voiceToggle.listening {
+      background: #22c55e;
+      color: #06210e;
+      animation: micPulse 1.6s ease-out infinite;
+    }
+    #voiceToggle.speaking {
+      background: #38bdf8;
+      color: #06283d;
+    }
+    #voiceToggle.speaking .icon-mic { display: none; }
+    #voiceToggle.speaking .icon-speaker { display: block; }
+    @keyframes micPulse {
+      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+      70% { box-shadow: 0 0 0 18px rgba(34, 197, 94, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
     #status {
       margin: 20px 0;
       color: #86efac;
@@ -44,8 +71,19 @@
   <h1>Adam — Truck Dispatch Agent</h1>
   <p>Speak naturally. Adam will respond automatically.</p>
 
-  <button id="start">Start conversation</button>
-  <button id="stop">Stop</button>
+  <button id="voiceToggle" type="button" aria-label="Start listening">
+    <svg class="icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="9" y="3" width="6" height="11" rx="3"></rect>
+      <path d="M5 11a7 7 0 0 0 14 0"></path>
+      <path d="M12 18v3"></path>
+    </svg>
+    <svg class="icon-speaker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3 10v4h4l5 4V6L7 10H3Z" fill="currentColor" stroke="none"></path>
+      <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+      <path d="M18.5 6a9 9 0 0 1 0 12"></path>
+    </svg>
+  </button>
+  <p>Tap the mic to start. Tap again to stop. The icon changes to a speaker while Adam talks.</p>
 
   <div id="status">Ready</div>
   <div id="conversation">Your conversation will appear here.</div>
@@ -57,13 +95,26 @@
 
   const statusEl = document.getElementById("status");
   const conversationEl = document.getElementById("conversation");
-  const startButton = document.getElementById("start");
-  const stopButton = document.getElementById("stop");
+  const voiceToggle = document.getElementById("voiceToggle");
+
+  function setToggleState(state) {
+    voiceToggle.classList.remove("listening", "speaking");
+
+    if (state === "listening") {
+      voiceToggle.classList.add("listening");
+      voiceToggle.setAttribute("aria-label", "Stop listening");
+    } else if (state === "speaking") {
+      voiceToggle.classList.add("speaking");
+      voiceToggle.setAttribute("aria-label", "Stop the assistant");
+    } else {
+      voiceToggle.setAttribute("aria-label", "Start listening");
+    }
+  }
 
   if (!SpeechRecognition) {
     statusEl.textContent =
       "Speech recognition is unavailable. Try updated Google Chrome.";
-    startButton.disabled = true;
+    voiceToggle.disabled = true;
     throw new Error("SpeechRecognition is not supported.");
   }
 
@@ -118,7 +169,7 @@
 
   
 async function startMicMonitor() {
-  if (micMonitor) return;
+  if (micMonitor) return true;
 
   try {
     micStream = await navigator.mediaDevices.getUserMedia({
@@ -192,9 +243,14 @@ async function startMicMonitor() {
         speechStartedAt = 0;
       }
     }, 50);
+
+    return true;
   } catch (error) {
     console.error("Microphone monitor error:", error);
+    listeningEnabled = false;
+    setToggleState("idle");
     setStatus("Could not access microphone. Check Chrome permissions.");
+    return false;
   }
 }
 
@@ -209,21 +265,33 @@ async function startMicMonitor() {
   }
 
   
-  startButton.onclick = async () => {
-    listeningEnabled = true;
-    startButton.disabled = true;
+  voiceToggle.onclick = () => {
+    if (listeningEnabled || busy || assistantSpeaking) {
+      stopConversation();
+    } else {
+      startListening();
+    }
+  };
 
-    await startMicMonitor();
+  async function startListening() {
+    listeningEnabled = true;
+    setToggleState("listening");
+
+    const micReady = await startMicMonitor();
+
+    if (!micReady) {
+      return;
+    }
 
     setStatus("Listening... speak now.");
     startRecognition();
-  };
+  }
 
-
-  stopButton.onclick = () => {
+  function stopConversation() {
     listeningEnabled = false;
     busy = false;
     assistantSpeaking = false;
+    interruptionTriggered = false;
     requestNumber++;
 
     clearTimeout(restartTimer);
@@ -244,9 +312,9 @@ async function startMicMonitor() {
     } catch (error) {
     }
 
-    startButton.disabled = false;
+    setToggleState("idle");
     setStatus("Conversation stopped.");
-  };
+  }
 
   
   recognition.onresult = (event) => {
@@ -290,7 +358,7 @@ async function startMicMonitor() {
   recognition.onerror = (event) => {
     if (event.error === "not-allowed") {
       listeningEnabled = false;
-      startButton.disabled = false;
+      setToggleState("idle");
       setStatus("Allow microphone access in Chrome, then try again.");
     } else if (
       event.error !== "no-speech" &&
@@ -325,6 +393,7 @@ async function startMicMonitor() {
     assistantSpeaking = false;
     busy = false;
 
+    setToggleState("listening");
     setStatus("You interrupted Adam. Preparing response...");
     askAdam(message);
   }
@@ -417,6 +486,7 @@ async function askAdam(message) {
             currentAudio = audio;
             assistantSpeaking = true;
 
+            setToggleState("speaking");
             setStatus("Adam is speaking...");
 
             try {
@@ -490,9 +560,7 @@ async function askAdam(message) {
                 "Listening... you can speak whenever you're ready."
             );
 
-            if (!listeningEnabled) {
-                startButton.disabled = false;
-            }
+            setToggleState(listeningEnabled ? "listening" : "idle");
         }
 
     } catch (error) {
@@ -508,9 +576,7 @@ async function askAdam(message) {
                 console.error(error);
             }
 
-            if (!listeningEnabled) {
-                startButton.disabled = false;
-            }
+            setToggleState(listeningEnabled ? "listening" : "idle");
         }
     }
 }
