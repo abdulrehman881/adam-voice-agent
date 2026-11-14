@@ -1,5 +1,7 @@
 # Adam Voice Agent
 
+![Adam Voice Agent](assets/thumbnail.png)
+
 A streaming AI voice agent you can talk to in the browser: press the mic,
 speak, and Adam listens, thinks, and answers with a natural voice.
 
